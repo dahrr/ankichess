@@ -28,6 +28,9 @@ Currently there is no install tool. You can manually add `ankichess.py` to your 
 | `--blindfold` |            | x        | Generate text notation only, no images (Implies --mainline)               |
 | `--game NUM`  |            | x        | Select the Nth game from the PGN file (Default is 1)                      |
 | `--flip`      |            | x        | Generate images from black's perspective (Does nothing if --blindfold)    |
+| `--arrows`    |            | x        | Draw arrows as described in the PGN file                                  |
+| `--black`     |            | x        | Only generate cards where it is black to play                             |
+| `--white`     |            | x        | Only generate cards where it is white to play. Overrides --black.         |
 
 example: `ankichess.py pgn/opera_game.pgn opera_game.apkg "The Opera Game"`
 
