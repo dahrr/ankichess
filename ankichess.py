@@ -51,14 +51,14 @@ def gen_id():
 def iterate(game, mainline=False):
 	"""
 	Iterate over the child nodes of a game.
-
+	
 	Parameters
 	----------
 	game : chess.pgn.Game
 		A game to iterate over.
 	mainline : bool, default=False
 		If True, only iterate over the mainline, else visit all nodes.
-
+		
 	yields
 	------
 	chess.pgn.GameNode
@@ -77,15 +77,14 @@ def iterate(game, mainline=False):
 def game_node_hash(game_node):
 	"""
 	Creates a unique hash of a game node.
-
 	Hashes are created with respect to the current state of the board and the
 	move that put it in that state.
-
+	
 	Parameters
 	----------
 	game_node : chess.pgn.GameNode
 		Some node to hash.
-
+		
 	Returns
 	-------
 	str
@@ -103,12 +102,12 @@ def game_node_hash(game_node):
 def full_path(file_name):
 	"""
 	Returns the file name as if it were listed in the work directory.
-
+	
 	Parameters
 	----------
 	file_name : str
 		Some file name.
-
+		
 	Returns
 	-------
 	str
@@ -118,10 +117,9 @@ def full_path(file_name):
 def write_svg(game_node, flip):
 	"""
 	Writes an SVG file to disk based on a game node.
-
 	The image created is of the current state of the chess board with the most
 	recent move highlighted (if applicable).
-
+	
 	Parameters
 	----------
 	game_node : chess.pgn.GameNode
@@ -129,12 +127,11 @@ def write_svg(game_node, flip):
 	
 	flip : bool
 		If true, flip the generated image to show from black's perspective.
-
+		
 	Returns
 	-------
 	str : file_name
 		The file name of the created image.
-
 	Note: The created file names are hashable, and no duplicate images are
 	      created during run-time.
 	"""
@@ -151,8 +148,8 @@ write_svg.file_names=[] #static var used to avoid re-creating any images
 
 def image_data(game, mainline, flip, white, black):
 	"""
-	Generate question/answer pairs for a game using images.
-
+	Generate question/answer/question comment/answer comment quadruplets for a game using images.
+	
 	Parameters
 	----------
 	game : chess.pgn.Game
@@ -162,11 +159,13 @@ def image_data(game, mainline, flip, white, black):
 		generate values for all nodes.
 	flip : bool
 		if true, flip generated images to view from black's perspective.
-
+		
 	Yields
 	------
-	(question, answer) : (str, str)
-		file names for images describing the relevant question and answer.
+	(question, answer, qcomment, acomment) : (str, str, str, str)
+		question, answer : file names for images describing the relevant question and answer.
+		qcomment, acomment : comments for the question and answer
+		
 	"""
 	if white:
 		for child_node in iterate(game, mainline):
@@ -175,7 +174,9 @@ def image_data(game, mainline, flip, white, black):
 			else:
 				question = write_svg(child_node.parent, flip)
 				answer   = write_svg(child_node, flip)
-				yield (question, answer)
+				qcomment = child_node.parent.comment.split('[')[0]
+				acomment = child_node.comment.split('[')[0]
+				yield (question, answer, qcomment, acomment)
 	elif black:
 		for child_node in iterate(game, mainline):
 			if child_node.parent.turn() == chess.WHITE:
@@ -183,23 +184,26 @@ def image_data(game, mainline, flip, white, black):
 			else:
 				question = write_svg(child_node.parent, flip)
 				answer   = write_svg(child_node, flip)
-				yield (question, answer)
+				qcomment = child_node.parent.comment.split('[')[0] 
+				acomment = child_node.comment.split('[')[0]
+				yield (question, answer, qcomment, acomment)
 	else:
 		for child_node in iterate(game, mainline):
 			question = write_svg(child_node.parent, flip)
 			answer   = write_svg(child_node, flip)
-			yield (question, answer)
+			qcomment = child_node.parent.comment.split('[')[0] 
+			acomment = child_node.comment.split('[')[0]
+			yield (question, answer, qcomment, acomment)
 def notation_data(game):
 	"""
 	Generate question/answer pairs for a game using SAN notation.
-
 	Note: Only mainline nodes will have values generated for them.
-
+	
 	Parameters
 	----------
 	game : chess.pgn.Game
 		A game to generate questions and answers from.
-
+		
 	Yields
 	------
 	(question, answer) : (str, str)
@@ -219,7 +223,7 @@ def notation_data(game):
 def generate(game, out, title, blindfold=False, mainline=True, flip=False, white=False, black=False):
 	"""
 	Generate an Anki deck from a game.
-
+	
 	Parameters
 	----------
 	game : chess.pgn.Game
@@ -245,11 +249,11 @@ def generate(game, out, title, blindfold=False, mainline=True, flip=False, white
 			deck.add_note(note)
 		package = genanki.Package(deck)
 	else:
-		for question, answer in image_data(game, mainline, flip, white, black):
+		for question, answer, qcomment, acomment in image_data(game, mainline, flip, white, black):
 			media.append(os.path.join(WORK_DIR, question))
 			media.append(os.path.join(WORK_DIR, answer))
-			question = f"<img src='{question}'>"
-			answer   = f"<img src='{answer}'>"
+			question = f"<img src='{question}'> <br>{qcomment}"
+			answer   = f"<img src='{answer}'> <br>{acomment}"
 			note = genanki.Note(model=IMAGE_MODEL, fields=[question, answer])
 			deck.add_note(note)
 		media = set(media)
