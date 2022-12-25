@@ -252,8 +252,8 @@ def generate(game, out, title, blindfold=False, mainline=True, flip=False, white
 		for question, answer, qcomment, acomment in image_data(game, mainline, flip, white, black):
 			media.append(os.path.join(WORK_DIR, question))
 			media.append(os.path.join(WORK_DIR, answer))
-			question = f"<img src='{question}'> <br>{qcomment}"
-			answer   = f"<img src='{answer}'> <br>{acomment}"
+			question = f"<img style=\"display: block; margin-left: auto; margin-right: auto;\" src=\"{question}\"><p style=\"font-size: 28px; text-align: center;\">{qcomment}</p>"
+			answer   = f"<img style=\"display: block; margin-left: auto; margin-right: auto;\" src=\"{answer}\"><p style=\"font-size: 28px; text-align: center;\">{acomment}</p>"
 			note = genanki.Note(model=IMAGE_MODEL, fields=[question, answer])
 			deck.add_note(note)
 		media = set(media)
