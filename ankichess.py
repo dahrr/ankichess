@@ -114,7 +114,7 @@ def full_path(file_name):
 	"""
 	return os.path.join(WORK_DIR, file_name)
 
-def write_svg(game_node, flip, arrows):
+def write_svg(game_node, flip, arrows, coordinates):
 	"""
 	Writes an SVG file to disk based on a game node.
 	The image created is of the current state of the chess board with the most
@@ -142,14 +142,14 @@ def write_svg(game_node, flip, arrows):
 	file_name = f"{('+','-')[flip]}{hash_val}.svg"
 	if file_name in write_svg.file_names:
 		return file_name
-	image = chess.svg.board(board=game_node.board(), lastmove=game_node.move, size=PIXEL_SIZE, flipped=flip, arrows = game_node.arrows() if arrows else [])
+	image = chess.svg.board(board=game_node.board(), lastmove=game_node.move, size=PIXEL_SIZE, flipped=flip, arrows = game_node.arrows() if arrows else [], coordinates=coordinates)
 	with open(full_path(file_name), "w") as f:
 		f.write(image)
 	write_svg.file_names.append(file_name)
 	return file_name
 write_svg.file_names=[] #static var used to avoid re-creating any images
 
-def image_data(game, mainline, flip, white, black, arrows):
+def image_data(game, mainline, flip, white, black, arrows, coordinates):
 	"""
 	Generate question/answer/question comment/answer comment quadruplets for a game using images.
 	
@@ -174,31 +174,47 @@ def image_data(game, mainline, flip, white, black, arrows):
 	(question, answer, qcomment, acomment) : (str, str, str, str)
 		question, answer : file names for images describing the relevant question and answer.
 		qcomment, acomment : comments for the question and answer
-		
 	"""
 	if white:
 		for child_node in iterate(game, mainline):
 			if child_node.parent.turn() == chess.WHITE:
-				question = write_svg(child_node.parent, flip, arrows)
-				answer   = write_svg(child_node, flip, arrows)
-				qcomment = child_node.parent.comment.split('[')[0]
-				acomment = child_node.comment.split('[')[0]
-				yield (question, answer, qcomment, acomment)
+				yield draw(child_node, flip, arrows, coordinates)
 	elif black:
 		for child_node in iterate(game, mainline):
 			if child_node.parent.turn() == chess.BLACK:
-				question = write_svg(child_node.parent, flip, arrows)
-				answer   = write_svg(child_node, flip, arrows)
-				qcomment = child_node.parent.comment.split('[')[0] 
-				acomment = child_node.comment.split('[')[0]
-				yield (question, answer, qcomment, acomment)
+				yield draw(child_node, flip, arrows, coordinates)
 	else:
 		for child_node in iterate(game, mainline):
-			question = write_svg(child_node.parent, flip, arrows)
-			answer   = write_svg(child_node, flip, arrows)
-			qcomment = child_node.parent.comment.split('[')[0] 
-			acomment = child_node.comment.split('[')[0]
-			yield (question, answer, qcomment, acomment)
+			yield draw(child_node, flip, arrows, coordinates)
+
+def draw(node, flip, arrows, coordinates):
+	"""
+	Draw question/answer images and organize them into quadruplets alongside their comments.
+	
+	Parameters
+	----------
+	node : chess.pgn.GameNode
+		The node to create a quadruplet for.
+	
+	flip : bool
+		If true, flip the generated image to show from black's perspective.
+		
+	arrows : bool
+		If true, draw arrows as described in the PGN.
+
+	Returns
+	-------
+	(question, answer, qcomment, acomment) : (str, str, str, str)
+		question, answer : file names for images describing the relevant question and answer.
+		qcomment, acomment : comments for the question and answer
+	"""		
+	question = write_svg(node.parent, flip, arrows, coordinates)
+	answer   = write_svg(node, flip, arrows, coordinates)
+	qcomment = node.parent.comment.split('[')[0] 
+	acomment = node.comment.split('[')[0]
+	return (question, answer, qcomment, acomment)
+
+
 def notation_data(game):
 	"""
 	Generate question/answer pairs for a game using SAN notation.
@@ -225,7 +241,7 @@ def notation_data(game):
 			answer   = f"{turn}... {move}"
 		yield (question, answer)
 
-def generate(game, out, title, blindfold=False, mainline=True, flip=False, white=False, black=False, arrows=False):
+def generate(game, out, title, blindfold=False, mainline=True, flip=False, white=False, black=False, arrows=False, coordinates=True):
 	"""
 	Generate an Anki deck from a game.
 	
@@ -254,7 +270,7 @@ def generate(game, out, title, blindfold=False, mainline=True, flip=False, white
 			deck.add_note(note)
 		package = genanki.Package(deck)
 	else:
-		for question, answer, qcomment, acomment in image_data(game, mainline, flip, white, black, arrows):
+		for question, answer, qcomment, acomment in image_data(game, mainline, flip, white, black, arrows, coordinates):
 			media.append(os.path.join(WORK_DIR, question))
 			media.append(os.path.join(WORK_DIR, answer))
 			question = f"<img style=\"display: block; margin-left: auto; margin-right: auto;\" src=\"{question}\"><p style=\"font-size: 28px; text-align: center;\">{qcomment}</p>"
@@ -286,7 +302,7 @@ def main(args):
 		raise SystemExit(f"could not find pgn file {args.pgn}")
 	if not args.blindfold: #temp dir to make images
 		os.makedirs(WORK_DIR, exist_ok=False)
-	generate(game, args.out, args.title, args.blindfold, args.mainline, args.flip, args.white, args.black, args.arrows)
+	generate(game, args.out, args.title, args.blindfold, args.mainline, args.flip, args.white, args.black, args.arrows, args.coordinates)
 	if not args.blindfold:
 		os.rmdir(WORK_DIR)
 
@@ -303,6 +319,7 @@ if __name__ == "__main__":
 	parser.add_argument("--white", action="store_true",           help="Generate cards only when it is white to play")
 	parser.add_argument("--black", action="store_true",           help="Generate cards only when it is black to play")
 	parser.add_argument("--arrows", action="store_true",			help="Draw arrows and circles on board")
+	parser.add_argument("--coordinates", action="store_false", help="Disable coordinates on images")
 	args = parser.parse_args()
 
 	main(args)
