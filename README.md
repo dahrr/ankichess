@@ -30,11 +30,15 @@ Currently there is no install tool. You can manually add `ankichess.py` to your 
 | `--flip`      |            | x        | Generate images from black's perspective (Does nothing if --blindfold)    |
 | `--arrows`    |            | x        | Draw arrows as described in the PGN file                                  |
 | `--black`     |            | x        | Only generate cards where it is black to play                             |
-| `--white`     |            | x        | Only generate cards where it is white to play. Overrides --black.         |
+| `--white`     |            | x        | Only generate cards where it is white to play. Overrides --black          |
+| `--coordinates` |          | x        | Disable coordinates showing on the cards                                  |
 
 example: `ankichess.py pgn/opera_game.pgn opera_game.apkg "The Opera Game"`
 
 Generated packages can be imported into the desktop version of Anki using the _Import File_ GUI.
+
+## Known issue
+If processing the same PGN but modifying options such as coordinates or arrows, there may be interference between the old deck's images (for the same position) and the new deck's. This can be resolved by going to the Anki user media folder and deleting the offending images.
 
 ## Example PGN Files
 Three PGN files are included in `pgn/`. They include _The Opera Game_, _Fool's Mate_ and _Scholar's Mate_, and an _Italian Game_. These files are intended for testing purposes.
